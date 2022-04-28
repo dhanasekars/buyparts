@@ -1,9 +1,7 @@
-""" 
-Created on : 15/04/22 4:52 PM
-@author : ds  
 """
-
-
+Created on : 15/04/22 4:52 PM
+@author : ds
+"""
 from selenium import webdriver
 
 chrome_driver_path = "/Users/ds/Documents/chromedriver"
@@ -26,7 +24,6 @@ print(warranty.text)
 print(selling_price.text)
 print(old_price.text)
 print(product_detail.text)
-
 
 
 
