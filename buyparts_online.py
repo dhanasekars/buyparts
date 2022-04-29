@@ -5,10 +5,14 @@ Created on : 14/04/22 9:03 PM
 
 # Using selenium driver scrap buyparts.online and get details of the all parts available in the site.
 
+# TODO Have the BuyPartsOnline as a module
+# TODO Have the two core functionality - All parts detail and total parts count as class method
+
 import csv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 
 
 COLUMN_HEADERS = ('Category', 'Parts', 'Product Name', 'Product Type', 'Product Details',
@@ -28,8 +32,8 @@ except FileNotFoundError:
 options = Options()
 
 
-# options.add_argument("--headless")
-# options.add_argument('--disable-gpu')
+options.add_argument("--headless")
+options.add_argument('--disable-gpu')
 
 
 class BuyPartsOnline:
@@ -49,7 +53,7 @@ class BuyPartsOnline:
         self.driver.get(URL)
         self.mega_menu_content_object = None
         self.mega_menu_content = None
-        self.mega_menu_content_object = self.driver.find_elements_by_css_selector("a" ".ss_megamenu_head")
+        self.mega_menu_content_object = self.driver.find_elements(By.CSS_SELECTOR, "a" ".ss_megamenu_head")
         self.parts_collection_grid = None
         self.parts_collection_grid_object = None
         self.mega_menu_title = None
@@ -66,7 +70,7 @@ class BuyPartsOnline:
         # self.mega_menu_content = [uri.get_attribute('href') for uri in self.mega_menu_content_object]
         self.mega_menu_content = \
             ['https://buyparts.online/pages/replacement-parts-and-components-for-mack-trucks',
-             'https://buyparts.online/pages/replacement-parts-and-components-for-western-star-trucks' ]
+             'https://buyparts.online/pages/replacement-parts-and-components-for-western-star-trucks']
         return self.mega_menu_content
 
     def get_parts_collection_grid_url(self, menu):
@@ -76,8 +80,9 @@ class BuyPartsOnline:
         """
         self.driver.get(menu)
         self.mega_menu_title = self.driver. \
-            find_element_by_css_selector('#breadcrumbs > div > div > nav > ol > li.active > span > span').text
-        self.parts_collection_grid_object = self.driver.find_elements_by_css_selector("a" ".collection-grid-item__link")
+            find_element(By.CSS_SELECTOR, '#breadcrumbs > div > div > nav > ol > li.active > span > span').text
+        self.parts_collection_grid_object = \
+            self.driver.find_elements(By.CSS_SELECTOR, "a" ".collection-grid-item__link")
         self.parts_collection_grid = [uri.get_attribute('href') for uri in self.parts_collection_grid_object]
         return self.parts_collection_grid
 
@@ -89,8 +94,8 @@ class BuyPartsOnline:
         """
         self.driver.get(part)
         self.part_menu_title = self.driver. \
-            find_element_by_xpath('/html/body/div[1]/div[4]/div[1]/section/div/div/nav/ol/li[2]/span/span').text
-        self.products_title_object = self.driver.find_elements_by_css_selector("a" ".product-name")
+            find_element(By.XPATH, '/html/body/div[1]/div[4]/div[1]/section/div/div/nav/ol/li[2]/span/span').text
+        self.products_title_object = self.driver.find_elements(By.CSS_SELECTOR, "a" ".product-name")
         self.products = [uri.get_attribute('href') for uri in self.products_title_object]
         return self.products
 
@@ -101,16 +106,17 @@ class BuyPartsOnline:
         :return: a tuple -> product details
         """
         self.driver.get(product)
-        self.product_detail = self.driver.find_element_by_class_name("grcap_anchor_product").text
-        self.vendor = self.driver.find_element_by_xpath(
-            '/html/body/div[1]/div[4]/div[1]/div/div/div/div[1]/div/div[1]/div[2]/div[1]/div[3]/p[1]/a').text
-        self.product_name = self.driver.find_element_by_class_name("product-single__title").text
-        self.product_type = self.driver.find_element_by_class_name("product-single__type").text.split(":")[1].strip()
-        self.warranty = self.driver.find_element_by_xpath(
-            '//*[@id="ProductSection-product-template"]/div/div[1]/div[2]/div[1]/div[3]/p[4]').text.split(":")[1] \
-            .strip()
-        self.selling_price = self.driver.find_element_by_xpath('//*[@id="ProductPrice-product-template"]/span').text
-        self.old_price = self.driver.find_element_by_xpath('//*[@id="ComparePrice-product-template"]/span').text
+        self.product_detail = self.driver.find_element(By.CLASS_NAME, "grcap_anchor_product").text
+        self.vendor = self.driver.find_element(By.XPATH,
+                                               '/html/body/div[1]/div[4]/div[1]/div/div/div/div[1]/div/div[1]/div[2]'
+                                               '/div[1]/div[3]/p[1]/a').text
+        self.product_name = self.driver.find_element(By.CLASS_NAME, "product-single__title").text
+        self.product_type = self.driver.find_element(By.CLASS_NAME, "product-single__type").text.split(":")[1].strip()
+        self.warranty = self.driver.find_element(By.XPATH,
+                                                 '//*[@id="ProductSection-product-template"]/div/div[1]/div[2]/div[1]'
+                                                 '/div[3]/p[4]').text.split(":")[1].strip()
+        self.selling_price = self.driver.find_element(By.XPATH, '//*[@id="ProductPrice-product-template"]/span').text
+        self.old_price = self.driver.find_element(By.XPATH, '//*[@id="ComparePrice-product-template"]/span').text
         # create a tuple of data for each product and append to result tuple
         self.record = (self.mega_menu_title, self.part_menu_title, self.product_name, self.product_type,
                        self.product_detail, self.selling_price, self.old_price, self.warranty)
@@ -118,9 +124,9 @@ class BuyPartsOnline:
 
     def get_total_parts(self, menu) -> int:
         self.driver.get(menu)
-        html = self.driver.find_element_by_tag_name('html')
+        html = self.driver.find_element(By.TAG_NAME, 'html')
         html.send_keys(Keys.END)
-        count_products = self.driver.find_elements_by_css_selector(".collection-grid-item__title")
+        count_products = self.driver.find_elements(By.CSS_SELECTOR, ".collection-grid-item__title")
         total_parts = 0
         for count_product in count_products:
             count = int(count_product.text.split('(')[1].split(" ")[1])
