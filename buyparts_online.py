@@ -5,12 +5,11 @@ Created on : 14/04/22 9:03 PM
 
 # Using selenium driver scrap buyparts.online and get details of the all parts available in the site.
 
-# TODO : Page navigation and getting product details
-# TODO : Get the total parts available in the website
-
 import csv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+
 
 COLUMN_HEADERS = ('Category', 'Parts', 'Product Name', 'Product Type', 'Product Details',
                   'Offer Price', 'Old Price', 'Warranty')
@@ -20,20 +19,22 @@ URL = "https://buyparts.online/"
 
 try:
     with open("buyparts.csv", "r") as file:
-        file.read()
+        pass
 except FileNotFoundError:
     with open("buyparts.csv", "w") as file:
         file_writer = csv.writer(file)
         file_writer.writerow(COLUMN_HEADERS)
 
-
 options = Options()
-options.add_argument("--headless")
-options.add_argument('--disable-gpu')
+
+
+# options.add_argument("--headless")
+# options.add_argument('--disable-gpu')
 
 
 class BuyPartsOnline:
     def __init__(self):
+        self.count_products = None
         self.record = None
         self.selling_price = None
         self.old_price = None
@@ -55,6 +56,7 @@ class BuyPartsOnline:
         self.mega_menu_content = None
         self.part_menu_title = None
         self.products = None
+        self.count = 0
 
     def get_mega_menu_urls(self):
         """
@@ -63,7 +65,8 @@ class BuyPartsOnline:
         """
         # self.mega_menu_content = [uri.get_attribute('href') for uri in self.mega_menu_content_object]
         self.mega_menu_content = \
-            ['https://buyparts.online/pages/replacement-parts-and-components-for-western-star-trucks']
+            ['https://buyparts.online/pages/replacement-parts-and-components-for-mack-trucks',
+             'https://buyparts.online/pages/replacement-parts-and-components-for-western-star-trucks' ]
         return self.mega_menu_content
 
     def get_parts_collection_grid_url(self, menu):
@@ -104,7 +107,7 @@ class BuyPartsOnline:
         self.product_name = self.driver.find_element_by_class_name("product-single__title").text
         self.product_type = self.driver.find_element_by_class_name("product-single__type").text.split(":")[1].strip()
         self.warranty = self.driver.find_element_by_xpath(
-            '//*[@id="ProductSection-product-template"]/div/div[1]/div[2]/div[1]/div[3]/p[4]').text.split(":")[1]\
+            '//*[@id="ProductSection-product-template"]/div/div[1]/div[2]/div[1]/div[3]/p[4]').text.split(":")[1] \
             .strip()
         self.selling_price = self.driver.find_element_by_xpath('//*[@id="ProductPrice-product-template"]/span').text
         self.old_price = self.driver.find_element_by_xpath('//*[@id="ComparePrice-product-template"]/span').text
@@ -112,6 +115,17 @@ class BuyPartsOnline:
         self.record = (self.mega_menu_title, self.part_menu_title, self.product_name, self.product_type,
                        self.product_detail, self.selling_price, self.old_price, self.warranty)
         return self.record
+
+    def get_total_parts(self, menu) -> int:
+        self.driver.get(menu)
+        html = self.driver.find_element_by_tag_name('html')
+        html.send_keys(Keys.END)
+        count_products = self.driver.find_elements_by_css_selector(".collection-grid-item__title")
+        total_parts = 0
+        for count_product in count_products:
+            count = int(count_product.text.split('(')[1].split(" ")[1])
+            total_parts = total_parts + count
+        return total_parts
 
     def close_driver(self):
         """
@@ -121,7 +135,20 @@ class BuyPartsOnline:
         self.driver.quit()
 
 
+# initiation of BuyPartsOnline object
 buy_parts = BuyPartsOnline()
+
+# Get the total parts in the website
+
+mega_total = 0
+for mega_menu in buy_parts.get_mega_menu_urls():
+    total = buy_parts.get_total_parts(mega_menu)
+    mega_total = mega_total + total
+print(mega_total)
+
+# Get all the product details and write to a csv
+# TODO : Page navigation and getting product details
+
 for mega_menu in buy_parts.get_mega_menu_urls():
     for parts_collection_grid in buy_parts.get_parts_collection_grid_url(mega_menu):
         result = []
@@ -133,5 +160,3 @@ for mega_menu in buy_parts.get_mega_menu_urls():
                 file_writer.writerow(row)
 
 buy_parts.close_driver()
-
-
